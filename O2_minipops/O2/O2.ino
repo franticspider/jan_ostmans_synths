@@ -7,7 +7,9 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include "Arduino.h"
 #include "O2_data.h"
+
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -33,6 +35,7 @@
 const unsigned char PS_128 = (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
 
 
+#define POT1 A0
 
 
 //--------- Ringbuf parameters ----------
@@ -99,7 +102,7 @@ void setup() {
 	// Enable interrupt when TCNT1 == OCR1A
 	TIMSK1 |= _BV(OCIE1A);   
 	sei();
-	OCR1A = 800; //40KHz Samplefreq
+	OCR1A = 1600;//800; //40KHz Samplefreq
 
 	// Set up Timer 2 to do pulse width modulation on D11
 
@@ -155,6 +158,7 @@ void setup() {
 void loop() {  
 
 	uint16_t samplecntBD,samplecntBG2,samplecntCL,samplecntCW,samplecntCY,samplecntGU,samplecntMA,samplecntQU;
+        uint16_t pitch;
 
 	samplecntBD=0;
 	samplecntBG2=0;
@@ -286,18 +290,21 @@ void loop() {
 					++patselect;
 					patselect &= 15;   /* only 16 patterns */
 					patlength=pgm_read_byte_near(patlen + patselect);
+                                        Serial.print("p ");Serial.println(patselect);
 					break;
 				case('k'):  /* previous pattern */
 					--patselect;
 					patselect &= 15;   /* only 16 patterns */
 					patlength=pgm_read_byte_near(patlen + patselect);
+                                        Serial.print("p ");Serial.println(patselect);
 					break;
 				case(' '):
-					if (playing){
-						playing=0;
-					} else {
-						playing=1;
-					}
+					//if (playing){
+					//	playing=0;
+					//} else {
+					//	playing=1;
+					//}
+                                        playing = !playing;
 					break; 
 				case('f'):
 					if (tempo > 100){
@@ -309,11 +316,23 @@ void loop() {
 					tempo += 100;
 					Serial.println(tempo);
 					break;
+                                case('u'):
+                                        if(pitch>100){
+                                          pitch -= 100;
+                                        }
+                                        break;
+                                case('i'):
+                                        pitch += 100;
+                                        break;
 				default:
 					break;
 			}
 
 		}
+                
+                //---------------------------------------------------------------
+                //Serial.print("Pot 0 val is ");
+                //ffffffSerial.println(analogRead(POT1));
 
 	}
 
