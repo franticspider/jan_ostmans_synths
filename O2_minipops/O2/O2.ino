@@ -7,7 +7,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
-#include "Arduino.h"
+//#include "Arduino.h"
 #include "O2_data.h"
 
 
@@ -86,6 +86,8 @@ void setup() {
 
 	//8-bit PWM DAC pin
 	pinMode(11,OUTPUT);
+
+  pinMode(A0,INPUT_PULLUP); // pot read
 
 	// Set up Timer 1 to send a sample every interrupt.
 	cli();
@@ -176,11 +178,15 @@ void loop() {
 	uint8_t stepcnt=0;
 	uint16_t tempo=3500;
 	uint16_t tempocnt=1;
-	uint8_t MUX=4;
+	//uint8_t MUX=4;
 	uint8_t playing = 1;
 
 	uint8_t patselect=0;
 	uint8_t patlength=pgm_read_byte_near(patlen + patselect);
+
+  //Pitch control:
+  uint8_t divider,samplepitch,phacc;
+  uint8_t MUX=0;
 
 	while(1) { 
 
@@ -193,9 +199,23 @@ void loop() {
 				samplecntBD--;
 			}
 			if (samplecntBG2) {
-				total+=(pgm_read_byte_near(BG2 + samplepntBG2++)-128);
-				samplecntBG2--;
+        phacc+=samplepitch;
+        if(phacc & 128){
+          phacc &= 127;
+				  total+=(pgm_read_byte_near(BG2 + samplepntBG2++)-128);
+				  samplecntBG2--;
+        }
 			}
+            /*
+            if (samplecntSD) {
+            phaccSD+=pitchSD;
+              if (phaccSD & 128) {
+                phaccSD &= 127;
+                total+=(pgm_read_byte_near(SN + samplepntSD++)-128);
+                samplecntSD--;
+                
+              }
+            }*/
 			if (samplecntCL) {
 				total+=(pgm_read_byte_near(CL + samplepntCL++)-128);
 				samplecntCL--;
@@ -316,23 +336,46 @@ void loop() {
 					tempo += 100;
 					Serial.println(tempo);
 					break;
-                                case('u'):
-                                        if(pitch>100){
-                                          pitch -= 100;
-                                        }
-                                        break;
-                                case('i'):
-                                        pitch += 100;
-                                        break;
+        //case('u'):
+        //        if(pitch>100){
+        //          pitch -= 100;
+        //       }
+        //        break;
+        //case('i'):
+        //        pitch += 100;
+        //        break;
+        case('p'):
+          Serial.println("---------------");
+          Serial.println("Current Pattern");
+          Serial.print("Tempo: ");Serial.println(tempo);
+          Serial.print("Pot 0 val is ");Serial.println(samplepitch);
+          Serial.println("---------------");
+          Serial.println("---------------");
+          break;
 				default:
 					break;
 			}
 
 		}
-                
-                //---------------------------------------------------------------
-                //Serial.print("Pot 0 val is ");
-                //ffffffSerial.println(analogRead(POT1));
+
+    if (!(divider++)) {
+      if (!(ADCSRA & 64)) {
+
+        //cbi(ADCSRA, ADSC); //start next conversation
+        uint16_t pitch=((ADCL+(ADCH<<8))>>3)+1;
+        if (MUX==0) samplepitch=pitch;
+        if (MUX==1) pitch=pitch;
+        if (MUX==2) pitch=pitch;
+        if (MUX==3) pitch=pitch;
+        if (MUX==4) pitch=pitch;
+        if (MUX==5) pitch=pitch;
+
+        MUX++;
+        if (MUX==6) MUX=0;
+        ADMUX = 64 | MUX; //Select MUX
+        sbi(ADCSRA, ADSC); //start next conversation
+      }
+    }
 
 	}
 
