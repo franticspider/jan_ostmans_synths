@@ -88,6 +88,8 @@ void setup() {
 	pinMode(11,OUTPUT);
 
   pinMode(A0,INPUT_PULLUP); // pot read
+  pinMode(A1,INPUT_PULLUP); // tempo pot
+  pinMode(A2,INPUT_PULLUP); // pattern select pot
 
 	// Set up Timer 1 to send a sample every interrupt.
 	cli();
@@ -176,7 +178,7 @@ void loop() {
 	int16_t total;
 
 	uint8_t stepcnt=0;
-	uint16_t tempo=3500;
+	uint16_t tempo=1500;//, pot_tempo=tempo;
 	uint16_t tempocnt=1;
 	//uint8_t MUX=4;
 	uint8_t playing = 1;
@@ -331,10 +333,12 @@ void loop() {
 						tempo -= 100;
 					}
 					Serial.println(tempo);
+					//Serial.println(pot_tempo);
 					break;
 				case('d'):
 					tempo += 100;
 					Serial.println(tempo);
+					//Serial.println(pot_tempo);
 					break;
         //case('u'):
         //        if(pitch>100){
@@ -349,6 +353,7 @@ void loop() {
           Serial.println("Current Pattern");
           Serial.print("Tempo: ");Serial.println(tempo);
           Serial.print("Pot 0 val is ");Serial.println(samplepitch);
+          Serial.print("Pattern is ");Serial.println(patselect);
           Serial.println("---------------");
           Serial.println("---------------");
           break;
@@ -364,8 +369,8 @@ void loop() {
         //cbi(ADCSRA, ADSC); //start next conversation
         uint16_t pitch=((ADCL+(ADCH<<8))>>3)+1;
         if (MUX==0) samplepitch=pitch;
-        if (MUX==1) pitch=pitch;
-        if (MUX==2) pitch=pitch;
+        if (MUX==1) tempo = 100+ ((ADCL+(ADCH<<8))<<2);
+        if (MUX==2) patselect = (ADCL+(ADCH<<8))>>6;
         if (MUX==3) pitch=pitch;
         if (MUX==4) pitch=pitch;
         if (MUX==5) pitch=pitch;
