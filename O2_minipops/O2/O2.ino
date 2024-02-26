@@ -106,7 +106,7 @@ void setup() {
 	// Enable interrupt when TCNT1 == OCR1A
 	TIMSK1 |= _BV(OCIE1A);   
 	sei();
-	OCR1A = 1600;//800; //40KHz Samplefreq
+	OCR1A = 800;//800; //40KHz Samplefreq
 
 	// Set up Timer 2 to do pulse width modulation on D11
 
@@ -149,12 +149,54 @@ void setup() {
 	ADMUX = 64;
 	sbi(ADCSRA, ADSC);
 
+  
+  //Attempt to remove noise in analogread...
+  //For this to work, connect 3.3v to AREF
+  //NB: didn't work - trying capacitors to gnd from each analog pin....
+  //analogReference(EXTERNAL);
+
 	Serial.begin(9600);
 
 	Serial.println("Modified Jan Ostman O2 Minipops!");
 	Serial.println("[j] for next pattern, [k] for previous");
 	Serial.println("[f] to speed up, [d] to slow down.  [space] to pause.");
+  Serial.println("[p] to get current pattern info");
 }
+
+
+
+
+
+void print_binary(int v, int num_places)
+{
+    int mask=0, n;
+
+    for (n=1; n<=num_places; n++)
+    {
+        mask = (mask << 1) | 0x0001;
+    }
+    v = v & mask;  // truncate v to specified number of places
+
+    while(num_places)
+    {
+
+        if (v & (0x0001 << num_places-1))
+        {
+             Serial.print("1");
+        }
+        else
+        {
+             Serial.print("0");
+        }
+
+        --num_places;
+        if(((num_places%4) == 0) && (num_places != 0))
+        {
+            Serial.print("_");
+        }
+    }
+}
+
 
 
 
@@ -178,7 +220,7 @@ void loop() {
 	int16_t total;
 
 	uint8_t stepcnt=0;
-	uint16_t tempo=1500;//, pot_tempo=tempo;
+	uint16_t tempo=3500;//, pot_tempo=tempo;
 	uint16_t tempocnt=1;
 	//uint8_t MUX=4;
 	uint8_t playing = 1;
@@ -186,9 +228,12 @@ void loop() {
 	uint8_t patselect=0;
 	uint8_t patlength=pgm_read_byte_near(patlen + patselect);
 
+  uint8_t bitshift = 0;
+
   //Pitch control:
-  uint8_t divider,samplepitch,phacc;
+  uint8_t divider,samplepitch,phaccBG2;
   uint8_t MUX=0;
+  uint8_t pp;
 
 	while(1) { 
 
@@ -201,12 +246,12 @@ void loop() {
 				samplecntBD--;
 			}
 			if (samplecntBG2) {
-        phacc+=samplepitch;
-        if(phacc & 128){
-          phacc &= 127;
-				  total+=(pgm_read_byte_near(BG2 + samplepntBG2++)-128);
-				  samplecntBG2--;
-        }
+          phaccBG2+=samplepitch;
+          if(phaccBG2 & 128){
+            phaccBG2 &= 127;
+            total+=(pgm_read_byte_near(BG2 + samplepntBG2++)-128);
+            samplecntBG2--;
+          }
 			}
             /*
             if (samplecntSD) {
@@ -312,13 +357,15 @@ void loop() {
 					++patselect;
 					patselect &= 15;   /* only 16 patterns */
 					patlength=pgm_read_byte_near(patlen + patselect);
-                                        Serial.print("p ");Serial.println(patselect);
+          Serial.print("p ");Serial.println(patselect);
+          Serial.print("p<<4 ");Serial.println(patselect<<4);
 					break;
 				case('k'):  /* previous pattern */
 					--patselect;
 					patselect &= 15;   /* only 16 patterns */
 					patlength=pgm_read_byte_near(patlen + patselect);
-                                        Serial.print("p ");Serial.println(patselect);
+          Serial.print("p ");Serial.println(patselect);
+          Serial.print("p<<4 ");Serial.println(patselect<<4);
 					break;
 				case(' '):
 					//if (playing){
@@ -326,7 +373,7 @@ void loop() {
 					//} else {
 					//	playing=1;
 					//}
-                                        playing = !playing;
+          playing != playing;
 					break; 
 				case('f'):
 					if (tempo > 100){
@@ -354,15 +401,21 @@ void loop() {
           Serial.print("Tempo: ");Serial.println(tempo);
           Serial.print("Pot 0 val is ");Serial.println(samplepitch);
           Serial.print("Pattern is ");Serial.println(patselect);
+          Serial.print("Patlen is ");Serial.println(patlength);
+          for(pp=0;pp<16;pp++){
+            print_binary(pgm_read_byte_near(pattern + (patselect<<4) + pp),8);
+            Serial.println();
+          }
           Serial.println("---------------");
           Serial.println("---------------");
           break;
 				default:
 					break;
-			}
+			}                                                                                                                                                                                                                     
 
 		}
 
+    
     if (!(divider++)) {
       if (!(ADCSRA & 64)) {
 
@@ -370,8 +423,8 @@ void loop() {
         uint16_t pitch=((ADCL+(ADCH<<8))>>3)+1;
         if (MUX==0) samplepitch=pitch;
         if (MUX==1) tempo = 100+ ((ADCL+(ADCH<<8))<<2);
-        if (MUX==2) patselect = (ADCL+(ADCH<<8))>>6;
-        if (MUX==3) pitch=pitch;
+        if (MUX==2) {patselect = (ADCL+(ADCH<<8))>>6; patlength = pgm_read_byte_near(patlen + patselect);}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+        if (MUX==3) bitshift = (ADCL+(ADCH<<8))>>6;
         if (MUX==4) pitch=pitch;
         if (MUX==5) pitch=pitch;
 

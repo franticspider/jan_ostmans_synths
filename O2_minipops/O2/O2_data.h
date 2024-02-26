@@ -1,7 +1,18 @@
 
 
-//Patterns GU BG2 BD CL CW MA CY QU
-/*
+/* Patterns GU BG2 BD CL CW MA CY QU
+
+15 sounds: Bass, Snare 1, Snare 2, Rimshot, High-Hat, Cymbal 1, Cymbal 2, Cowbell, Conga, Large Bongo, Small Bongo, Claves, Quijada, Guiro, Tambourine.
+
+GU = Guiro
+BG2 = Small bongo?
+BD = Bass Drum
+CL = Claves
+CW = Cowbell
+MA = ?maraca?
+
+
+
 16 steps
 ------------
 Hard rock
@@ -45,6 +56,23 @@ B00101110,
 B00000000,
 B00000100,
 B00000000,
+/*B00100000,      //Test Pattern:
+B00000000,
+B10100000,
+B01000000,
+B00100000,
+B00010000,
+B00101000,
+B00000100,
+B00100010,
+B00000001,
+B00100000,
+B00000000,
+B11111111,
+B00000000,
+B11111111,
+B00000000,*/
+
 
 B00100100,      //Disco16
 B00000000,
